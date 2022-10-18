@@ -1,34 +1,33 @@
+/* eslint-disable brace-style */
+// TODO - command for me only that prints bills scores
+
 // Require necessary discord.js classes
-const fs = require('node:fs');
-const path = require('node:path');
-const { Client, Intents, GatewayIntentBits } = require('discord.js');
-const { token } = require('./config.json');
-// const { Collection } = require('discord.js');
-// Create new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const { Client, Intents, Collection, GatewayIntentBits } = require("discord.js");
+const fs = require('fs');
 
-// client.commands = new Collection();
-// const commandsPath = path.join(__dirname, 'commands');
-// const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const client = new Client({
+	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+});
+const { config } = require('./config.json');
+// attach the config to CLIENT so it's available everywhere
+client.config = config;
+ClientUser.commands = new Collection();
 
-// for (const file of commandFiles) {
-// 	const filePath = path.join(commandsPath, file);
-// 	const command = require(filePath);
-// 	client.commands.set(command.data.name, command);
-// }
+const events = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
+for (const file of events) {
+	const eventName = file.split('.')[0];
+	const event = require(`./events/${file}`);
+	client.on(eventName, event.bind(null, client));
+}
 
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
-	if (event.once) {
-		client.once(event.name, (...args) => event.execute(...args)); 
-	} else {
-		client.on(event.name, (...args) => event.execute(...args));
-	}
+const commands = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+for (const file of commands) {
+	const commandName = file.split('.')[0];
+	const command = require(`./commands/${file}`);
+	
+	console.log(`Attempting to load command ${commandName}`);
+	client.commands.set(commandName, command);
 }
 
 // Login to Discord with client's token
-client.login(token);
+client.login(config.token);
